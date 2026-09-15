@@ -4,7 +4,7 @@ name: monitor
 # Não há segredo aqui: o token fica em Settings > Secrets (MONITOR_SECRET) e a rota recusa chamadas sem ele.
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -25,7 +25,7 @@ jobs:
 
   # O GitHub desliga agendamentos de repositórios sem commits há 60 dias. Um commit vazio por mês mantém ativo.
   keepalive:
-    if: github.event.schedule == '*/15 * * * *'
+    if: github.event.schedule == '7,22,37,52 * * * *'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
