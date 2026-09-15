@@ -1,0 +1,39 @@
+name: monitor
+# Dispara a checagem dos sites da Motriz a cada 15 minutos.
+# Este repositório é público só para ter minutos ilimitados do GitHub Actions.
+# Não há segredo aqui: o token fica em Settings > Secrets (MONITOR_SECRET) e a rota recusa chamadas sem ele.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checar sites
+        env:
+          MONITOR_SECRET: ${{ secrets.MONITOR_SECRET }}
+        run: |
+          code=$(curl -s -o out.json -w "%{http_code}" -m 90 -X POST https://motriztech.vercel.app/api/monitor/run -H "Authorization: Bearer $MONITOR_SECRET")
+          echo "HTTP $code"; head -c 600 out.json; echo
+          test "$code" = "200"
+
+  # O GitHub desliga agendamentos de repositórios sem commits há 60 dias. Um commit vazio por mês mantém ativo.
+  keepalive:
+    if: github.event.schedule == '*/15 * * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Commit mensal
+        run: |
+          last=$(git log -1 --format=%ct)
+          if [ $(( $(date +%s) - last )) -gt 2592000 ]; then
+            git config user.name "motriz-bot"; git config user.email "actions@users.noreply.github.com"
+            git commit --allow-empty -m "keepalive $(date -u +%F)" && git push
+          fi
